@@ -10,6 +10,7 @@
 import os # File and directory handling
 import time # for waiting n seconds
 #
+import matplotlib as mpl # Palette
 import matplotlib.pyplot as plt
 import numpy as np
 import netCDF4 as NC
@@ -36,14 +37,14 @@ from matplotlib.colors import LogNorm # For log scale in pcolor
 grid = 'T' # Choose T, U, V or uv2t grid
 num_of_models = 2 # 1 for dataset maps or 2 for diffs between 2 datasets
 dataset_name = 'diff' # '8' for Tides_8 run, 'ctrl' for the Control run or 'diff' for computing the diffs
-sub_plot_flag = 2 # flag for sub area plots (if == 1 (strait areas) or 2 (major river areas) are produced the global and sub areas plots)
+sub_plot_flag = 0 # flag for sub area plots (if == 1 (strait areas) or 2 (major river areas) are produced the global and sub areas plots)
 #---------------------
 # work dir path (WARNING: file in the directory will be removed..)
 #workdir_path = '/work/ag15419/tmp/map_ana_'+grid+dataset_name+'/'
 #workdir_path = '/work/ag15419/tmp/map_ana_'+grid+'diff'+'/'
 #workdir_path = '/work/ag15419/tmp/map_ana_'+grid+'diff'+'_nov'+'/'
 #workdir_path = '/work/ag15419/tmp/HA_maps'+'/'
-workdir_path = '/work/ag15419/tmp/S_map_tot/'
+workdir_path = '/work/ag15419/tmp/vertvel/S_map/'
 #
 # dates
 #---------------------
@@ -63,8 +64,8 @@ if grid == 'T':
    # T grid
    mod_depth_var='deptht'
    # 3D fields:
-   field_3d_name=['vosaline'] # #'votemper','vosaline'
-   field_3d_units=['PSU'] # 'degC','PSU'
+   field_3d_name=['votemper'] # #'votemper','vosaline'
+   field_3d_units=['degC'] # 'degC','PSU'
    # field_3d_lev_val is the index of the level , field_3d_lev is the depth in meters 
    field_3d_lev_val=[0,3,10,23,30,43,59,73,95] #[0,3,10,23,30,43,59,73,95] # Mod lev num
    field_3d_lev=[1,8,30,100,150,300,600,1000,2000] #[1,8,30,100,150,300,600,1000,2000] # Approx depth
@@ -73,8 +74,8 @@ if grid == 'T':
    field_3d_inf=[10,36]
    field_3d_sup=[25,42]
    #
-   Tdiff_threshold_3d=0
-   tdiff_th=0.5
+   Tdiff_threshold_3d=1
+   tdiff_th=0.4
    # 2D fields:
    field_2d_name=[] # ['sossheig','sowaflup','soevapor','soprecip','sorunoff','soshfldo','sohefldo','solofldo','sosefldo','solafldo','somxl010']
    field_2d_units=['m'] #['m','kg/m2/s','kg/m2/s','kg/m2/s','kg/m2/s','W/m2','W/m2','W/m2','W/m2','m']
@@ -164,10 +165,10 @@ elif sub_plot_flag == 2:
    Area_ADN_lat=[40,46] # GB LATs 
    Area_ADE_lon=[20,30] # AD LONs 
    Area_ADE_lat=[36,41] # AD LATs 
-   Area_WES_lon=[0,8] # EM LONs
-   Area_WES_lat=[39,44] # EM LATs
+   Area_WES_lon=[-1,8] # EM LONs
+   Area_WES_lat=[37,44] # EM LATs
    Area_EGY_lon=[27,36] # ME LONs
-   Area_EGY_lat=[30,33] # ME LATs
+   Area_EGY_lat=[30,34] # ME LATs
    #
    Area_name_ar=['Adriatic Sea','Aegean Sea','Catalan Sea and Gulf of Lion','Levantine Sea']
    Area_minlon_ar=[Area_ADN_lon[0],Area_ADE_lon[0],Area_WES_lon[0],Area_EGY_lon[0]]
@@ -183,8 +184,8 @@ elif grid == 'V':
    Area_vmin_ar=[-0.5,-0.3,-0.2,-0.5]
    Area_vmax_ar=[0.5,0.3,0.2,0.2]
 elif grid == 'T':
-   Area_vmin_ar=[-0.2,-0.2,-0.2,-0.2] # -3,-0.5,-0.8,2.0
-   Area_vmax_ar=[0.2,0.2,0.2,0.2] # 3,0.5,0.8,-2.0
+   Area_vmin_ar=[-0.1,-0.1,-0.1,-0.1] # -3,-0.5,-0.8,2.0
+   Area_vmax_ar=[0.1,0.1,0.1,0.1] # 3,0.5,0.8,-2.0
 #elif grid == 'uv2t':
    #Area_vmin_ar=[]
    #Area_vmax_ar=[]
@@ -741,8 +742,9 @@ elif num_of_models == 2:
                    bar_label_string=var_3d+' ['+var_3d_udm+']'
                    cbar.set_label(bar_label_string)
                    # Land contour
-                   land_value = [-999.999,vals_min-100]
+                   #land_value = [-999.999,vals_min-100]
                    #m.contourf(xi,yi,np.squeeze(vals_ma_nan),land_value,colors='black')
+                   m.drawmapboundary(fill_color='gray') 
                    # Save and close 
                    plt.savefig(plotname)
                    plt.clf()
@@ -832,9 +834,12 @@ elif num_of_models == 2:
                        m = Basemap(llcrnrlon=llcrnrlon,llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon,urcrnrlat=urcrnrlat,resolution='c',projection='merc')
                        xi, yi = m(lons, lats)
                        # Plot the land and the map
-                       m.pcolor(xi,yi,np.squeeze(vals_ma_rev),cmap='Oranges')
-                       print ('PROVA: ',Area_name_ar[idx_area],Area_vmin_ar[idx_area],Area_vmax_ar[idx_area])
-                       cs = m.pcolor(xi,yi,np.squeeze(vals_ma),cmap='gist_rainbow',vmin=Area_vmin_ar[idx_area],vmax=Area_vmax_ar[idx_area])
+                       cmap = mpl.cm.Greys(np.linspace(0,1,20))
+                       cmap = mpl.colors.ListedColormap(cmap[10:,:-1])
+                       #cmap =  cmap.reversed()
+                       m.pcolor(xi,yi,np.squeeze(vals_ma_rev),cmap=cmap) #Oranges
+                       print ('SUB REGION : ',Area_name_ar[idx_area],Area_vmin_ar[idx_area],Area_vmax_ar[idx_area])
+                       cs = m.pcolor(xi,yi,np.squeeze(vals_ma),cmap='RdBu_r',vmin=Area_vmin_ar[idx_area],vmax=Area_vmax_ar[idx_area]) #gist_rainbow
                        # Add the grid
                        m.drawparallels(np.arange(llcrnrlat,urcrnrlat, 1.), labels=[1,0,0,0], fontsize=10)
                        m.drawmeridians(np.arange(llcrnrlon,urcrnrlon, 2.), labels=[0,0,0,1], fontsize=10)
